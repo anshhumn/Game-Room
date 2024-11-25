@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="container">
+        <!-- Host Login Section -->
+        <div id="host-login" class="login-section">
+            <h2>Host Login</h2>
+            <input type="password" id="passcode-input" placeholder="Enter Passcode">
+            <button id="host-button" class="btn">Join as Host</button>
+        </div>
+
+        <!-- Team Login Section -->
+        <div id="team-login" class="login-section">
+            <h2>Join as a Team</h2>
+            <input type="text" id="team-name" placeholder="Enter Your Team Name">
+            <button id="team-button" class="btn">Join as Team</button>
+        </div>
+
+        <!-- Host Dashboard -->
+        <div id="host-dashboard" class="dashboard" style="display: none;">
+            <h2>Host Dashboard</h2>
+            <h3>Leaderboard</h3>
+            <div id="leaderboard"></div>
+            <textarea id="message-box" placeholder="Message to teams..."></textarea>
+            <button id="start-game-button" class="btn" style="display: none;">Start Game</button>
+        </div>
+
+        <!-- Team Dashboard -->
+        <div id="team-dashboard" class="dashboard" style="display: none;">
+            <h2>Team Dashboard</h2>
+            <div>Health: <div id="team-health-bar" class="health-bar"></div></div>
+            <select id="team-select"></select>
+            <button id="attack-button" class="btn" style="display: none;">Attack</button>
+            <button id="defend-button" class="btn" style="display: none;">Defend</button>
+            <div id="action-limits">Max Actions Remaining: <span id="action-count">10</span></div>
+        </div>
+
+        <div id="game-status"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>

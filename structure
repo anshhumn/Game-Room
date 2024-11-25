@@ -1,0 +1,7 @@
+game-room/
+├── public/
+│   ├── index.html      # Frontend HTML file
+│   ├── style.css       # CSS for styles
+│   ├── client.js       # JavaScript for client-side logic
+├── server.js           # Backend server
+├── package.json        # Project dependencies
