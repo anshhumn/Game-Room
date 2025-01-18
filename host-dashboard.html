@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/app.js" defer></script>
+</head>
+<body>
+    <div id="hostPanel">
+        <h2>Host Dashboard</h2>
+        <h3>Teams Waiting:</h3>
+        <div id="teamList">
+            <!-- List of teams will appear here once they log in -->
+        </div>
+        <button onclick="startGame()" id="startGameBtn">Start Game</button>
+        <button onclick="gameOver()">End Game</button>
+        <div id="history">
+            <h3>Game History</h3>
+            <!-- History of attacks will be shown here -->
+        </div>
+    </div>
+</body>
+</html>

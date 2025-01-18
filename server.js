@@ -6,79 +6,85 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-let teams = {};
-let gameStarted = false;  // To track if the game has started
+const teams = {
+    teamA: { name: 'Team A', health: 100, attacks: { 'Shadow Intrusion': 6, 'Vault Breaker': 5 }, password: 'teamApass' },
+    teamB: { name: 'Team B', health: 100, attacks: { 'System Flood': 3, 'Swarm Overloaded': 2 }, password: 'teamBpass' },
+};
+
+let gameStarted = false;
+let connectedTeams = {};
 
 app.use(express.static('public'));
 
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+    console.log('A user connected:', socket.id);
 
-  socket.on('host-joined', () => {
-    console.log('Host has joined');
-  });
+    // Handle team joining
+    socket.on('team-joined', ({ teamName, password }) => {
+        if (teams[teamName] && teams[teamName].password === password) {
+            connectedTeams[socket.id] = teamName;
+            socket.emit('update-teams', teams);
+            io.emit('host-message', `${teamName} has joined the game`);
+        } else {
+            socket.emit('host-message', 'Invalid team credentials');
+        }
+    });
 
-  socket.on('team-joined', ({ teamName }) => {
-    teams[socket.id] = { name: teamName, health: 100, attackPoints: 10, defendPoints: 10 };
-    console.log(`${teamName} joined.`);
-    io.emit('update-teams', teams);
-  });
+    // Handle host login
+    socket.on('host-joined', ({ hostname, hostPassword }) => {
+        if (hostname === 'me' && hostPassword === '1234') {
+            socket.emit('host-message', 'Host logged in successfully!');
+        } else {
+            socket.emit('host-message', 'Invalid host credentials');
+        }
+    });
 
-  socket.on('start-game', () => {
-    gameStarted = true;
-    io.emit('game-started');  // Notify all teams
-    io.emit('host-message', 'Host has started the game. You may now attack.');
-  });
-
-  socket.on('host-message', (message) => {
-    socket.broadcast.emit('host-message', message);
-  });
-
-  socket.on('attack', (targetId) => {
-    if (gameStarted && teams[socket.id] && teams[targetId]) {
-      // Check if both teams exist and the target is not the same team
-      if (targetId !== socket.id) {
-        let damage = 10;  // Default attack damage
-        teams[targetId].health -= damage;
-
-        // Ensure health doesn't go below 0
-        if (teams[targetId].health < 0) {
-          teams[targetId].health = 0;
+    // Update teams when host clicks 'Start Game'
+    socket.on('start-game', () => {
+        if (Object.keys(connectedTeams).length < 2) {
+            socket.emit('host-message', 'Not enough teams to start the game');
+            return;
         }
 
-        // Notify the attacked team and the host
-        io.to(targetId).emit('update-stats', teams[targetId]);
-        io.to(socket.id).emit('attack-result', 'Attack successful!');
-        io.emit('update-teams', teams);
+        gameStarted = true;
+        io.emit('game-started');
+        io.emit('host-message', 'Game has started!');
+    });
 
-        // Check for game over condition
-        checkGameOver();
-      }
-    }
-  });
+    // Attack handling (when game starts)
+    socket.on('attack', (targetTeamName, attackType) => {
+        if (!gameStarted) {
+            socket.emit('game-not-started');
+            return;
+        }
 
-  socket.on('defend', () => {
-    if (gameStarted && teams[socket.id]) {
-      teams[socket.id].health += 10;  // Defend increases health by 10
-      // Ensure health doesn't exceed 100
-      if (teams[socket.id].health > 100) {
-        teams[socket.id].health = 100;
-      }
-      io.to(socket.id).emit('update-stats', teams[socket.id]);
-      io.emit('update-teams', teams);
-    }
-  });
+        // Attack logic here (for simplicity, reduce health)
+        const attackerTeamName = connectedTeams[socket.id];
+        if (attackerTeamName && teams[attackerTeamName].attacks[attackType]) {
+            const attackPower = teams[attackerTeamName].attacks[attackType];
+            if (teams[targetTeamName]) {
+                teams[targetTeamName].health -= attackPower;
+                if (teams[targetTeamName].health < 0) {
+                    teams[targetTeamName].health = 0;
+                }
+                io.emit('team-health-update', teams);
+                io.emit('attack-update', `${attackerTeamName} attacked ${targetTeamName} using ${attackType}`);
+            }
+        }
+    });
+
+    // End the game
+    socket.on('game-over', () => {
+        gameStarted = false;
+        io.emit('host-message', 'Game Over!');
+        io.emit('game-over');
+    });
+
+    socket.on('disconnect', () => {
+        delete connectedTeams[socket.id];
+    });
 });
 
-function checkGameOver() {
-  // Check if only one team has health > 0
-  const aliveTeams = Object.values(teams).filter(team => team.health > 0);
-  if (aliveTeams.length === 1) {
-    io.emit('game-over', `The winner is ${aliveTeams[0].name}! Congratulations!`);
-    gameStarted = false;
-  }
-}
-
 server.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000');
+    console.log('Server running on http://localhost:3000');
 });
